@@ -1,33 +1,45 @@
+import axios from 'axios'
+import { logService } from '@/services/logService'
+
+//request generico para hacer peticiones a la API
 export const genericRequest = async (url: string, method: string, body?: any) => {
-    try {
-      const res = await fetch(url, {
-        method: method,
-        body: JSON.stringify(body),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-      console.log('haber que hay')
-      console.log(res)
-      return await res.json()
-    } catch (e) {
-      console.log(e)
-    }
-  }
-  
-  export const genericRequestAuthenticated = async (
-    url: string,
-    method: string,
-    query: string,
-    header: object,
-  ) => {
-    const res = await fetch(url, {
+  try {
+    const response = await axios({
+      url: url,
       method: method,
       headers: {
-        ...header,
         'Content-Type': 'application/json',
       },
+      data: body,
     })
-    return await res.json()
+    return response.data
+  } catch (error: any) {
+    await logService.log('error', `Error in genericRequest: ${error.message}`, {
+      url,
+      method,
+      body,
+      error,
+    })
+    throw error
   }
-  
+}
+export const genericRequestAutheticated = async (headers: any, url: string, method: string, body?: any) => {
+  try {
+    const response = await axios({
+      url: url,
+      method: method,
+      headers: headers,
+      data: body,
+    })
+    return response  // <-- Retornar el objeto completo
+  } catch (error: any) {
+    await logService.log('error', `Error in genericRequestAutheticated: ${error.message}`, {
+      url,
+      method,
+      body,
+      headers,
+      error,
+    })
+    throw error
+  }
+}

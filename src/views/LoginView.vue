@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { loginService } from '@/services/userService'
-import registerImage from '@/assets/register.webp'  // Importa la imagen
+import { ref, onMounted } from 'vue'
+import { LoginService } from '@/services/userService'
+import registerImage from '@/assets/register.webp'
 
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
 const errorMessage = ref('')
 
+// Ejemplo de llamada onMounted (puedes eliminarlo si no es necesario)
 onMounted(async () => {
   const res = await fetch('https://jsonplaceholder.typicode.com/posts')
   await res.json()
@@ -15,24 +16,33 @@ onMounted(async () => {
 })
 
 const login = async () => {
-  const validatePassword = computed(() => password.value.length > 6 && password.value)
-  const validateEmail = computed(
-    () => email.value.includes('@') && email.value.includes('.com') && password.value,
-  )
-  if (!validateEmail && !validatePassword) {
+  // Validación básica del formato de email y longitud de contraseña
+  if (!email.value.includes('@') || !email.value.includes('.com')) {
+    errorMessage.value = 'El formato del email es inválido'
     return
   }
+  if (password.value.length <= 6) {
+    errorMessage.value = 'La contraseña debe tener más de 6 caracteres'
+    return
+  }
+
   loading.value = true
   errorMessage.value = ''
 
   try {
-    const response = await loginService(email.value, password.value)
-    if (!response.ok) throw new Error('Credenciales incorrectas')
-    const data = response
-    console.log('Login exitoso:', data)
-    alert('¡Inicio de sesión exitoso!')
-  } catch (error) {
-    errorMessage.value = 'Ocurrió un error'
+    // Llamada al servicio de login
+    const response = await LoginService(email.value, password.value)
+    // Se asume que el servicio devuelve un objeto con la propiedad token en caso de éxito
+    if (!response || !response.token) {
+      throw new Error('Credenciales incorrectas')
+    }
+    console.log('Login exitoso:', response)
+    /* alert('¡Inicio de sesión exitoso!') */
+    // Opcional: almacenar el token para futuras peticiones
+    localStorage.setItem('token', response.token)
+  } catch (error: any) {
+    errorMessage.value = 'Ocurrió un error durante el inicio de sesión'
+    console.error(error)
   } finally {
     loading.value = false
   }

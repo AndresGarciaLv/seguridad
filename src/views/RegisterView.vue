@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { loginService } from '@/services/userService'
-import registerImage from '@/assets/register.webp'  // Importa la imagen
+import { ref, onMounted } from 'vue'
+import { RegisterService } from '@/services/userService'
+import registerImage from '@/assets/register.webp'
 
 const email = ref('')
 const password = ref('')
+const confirmPassword = ref('')
 const loading = ref(false)
 const errorMessage = ref('')
 
@@ -15,24 +16,40 @@ onMounted(async () => {
 })
 
 const register = async () => {
-  const validatePassword = computed(() => password.value.length > 6 && password.value)
-  const validateEmail = computed(
-    () => email.value.includes('@') && email.value.includes('.com') && password.value,
-  )
-  if (!validateEmail && !validatePassword) {
+  // Validación de campos vacíos
+  if (!email.value || !password.value || !confirmPassword.value) {
+    errorMessage.value = "Todos los campos son requeridos."
     return
   }
+
+  // Validación del formato del email
+  if (!email.value.includes('@') || !email.value.includes('.com')) {
+    errorMessage.value = "El email no tiene un formato válido."
+    return
+  }
+
+  // Validación de la longitud de la contraseña
+  if (password.value.length <= 6) {
+    errorMessage.value = "La contraseña debe tener más de 6 caracteres."
+    return
+  }
+
+  // Validación de que las contraseñas coincidan
+  if (password.value !== confirmPassword.value) {
+    errorMessage.value = "Las contraseñas no coinciden."
+    return
+  }
+
   loading.value = true
   errorMessage.value = ''
 
   try {
-    const response = await loginService(email.value, password.value)
-    if (!response.ok) throw new Error('Credenciales incorrectas')
-    const data = response
-    console.log('Registro exitoso:', data)
+    const response = await RegisterService(email.value, password.value)
+    console.log('Registro exitoso:', response)
     alert('¡Registro exitoso!')
-  } catch (error) {
+  } catch (error: any) {
     errorMessage.value = 'Ocurrió un error'
+    console.error(error)
   } finally {
     loading.value = false
   }
@@ -41,9 +58,6 @@ const register = async () => {
 
 <template>
   <div class="min-h-screen flex">
-    <!-- Lado izquierdo con imagen (visible en pantallas grandes) -->
-   
-    
     <!-- Lado derecho con el formulario -->
     <div class="flex flex-col justify-center items-center w-full lg:w-1/2 bg-white">
       <div class="max-w-md w-full p-8">
@@ -75,6 +89,18 @@ const register = async () => {
             />
           </div>
 
+          <div>
+            <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">Confirmar Contraseña</label>
+            <input
+              id="confirmPassword"
+              v-model="confirmPassword"
+              type="password"
+              placeholder="********"
+              class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              required
+            />
+          </div>
+
           <div v-if="errorMessage" class="p-3 bg-red-100 text-red-600 rounded text-sm">
             {{ errorMessage }}
           </div>
@@ -90,6 +116,7 @@ const register = async () => {
       </div>
     </div>
 
+    <!-- Imagen lateral (visible en pantallas grandes) -->
     <div
       class="hidden lg:block lg:w-1/2 bg-cover bg-center h-[600px] mt-11"
       :style="{ backgroundImage: `url(${registerImage})` }"
